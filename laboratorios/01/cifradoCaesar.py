@@ -14,8 +14,8 @@ def descifrado(texto, desplazamiento):
 
 
 def main():
-    a= cesarCode('aBCd3.,',29)
+    a= cesarCode('aBCd3.,',3)
     print(a)
-    print(descifrado(a,29))
+    print(descifrado(a,3))
 
 main()
