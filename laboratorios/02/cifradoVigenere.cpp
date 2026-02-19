@@ -63,8 +63,8 @@ void verificar(string nombrePrueba, string original, string procesado, string es
 
 
 int main (){
-    string resultado = cifradoVigenere("abc", "ab");
-    string reversa = descifradoVigenere(resultado,"ab");
+    string resultado = cifradoVigenere("abcdef", "bcd");
+    string reversa = descifradoVigenere(resultado,"bcd");
     
     cout << resultado << endl;
     cout << reversa << endl;
