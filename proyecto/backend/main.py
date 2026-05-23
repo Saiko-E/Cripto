@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-import proyecto.backend.database as database
+import database
 
 # Inicializamos FastAPI
 app = FastAPI(title="API Proyecto Criptografía")

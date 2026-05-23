@@ -1,5 +1,5 @@
 import sqlite3
-import proyecto.backend.seguridad as seguridad  # Importamos las funciones de tu nuevo archivo
+import seguridad  # Importamos las funciones de tu nuevo archivo
 
 def getConexion():
     # conecta al archivo o lo crea si no existe
