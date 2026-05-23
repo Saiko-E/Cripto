@@ -1,9 +1,19 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware # 
 from pydantic import BaseModel
 from typing import Optional
 import database
 
 app = FastAPI(title="API Sistema de Servicio Social")
+
+# --- Configuración de CORS ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permite peticiones desde cualquier origen (ideal para desarrollo local)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Modelos de Pydantic ---
 class AdministradorNuevo(BaseModel):
