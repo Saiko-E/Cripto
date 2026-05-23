@@ -1,96 +1,97 @@
 import os
+import base64
+from io import BytesIO
+import qrcode
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import hashes, serialization
 
-# cifrado simetrico (Fernet) para proteger los datos
+# ¡Adiós RSA! Hola Criptografía Post-Cuántica (FIPS 204)
+from dilithium_py.dilithium import Dilithium2
+
+# ==========================================
+# 1. LÓGICA DE CIFRADO SIMÉTRICO (FERNET)
+# ==========================================
 
 def obtenerLlaveFernet():
-    # Si no existe la llave, la crea y la guarda
     if not os.path.exists("secreto.key"):
         llave = Fernet.generate_key()
         with open("secreto.key", "wb") as archivoLlave:
             archivoLlave.write(llave)
-    
     with open("secreto.key", "rb") as archivoLlave:
         return archivoLlave.read()
 
-# Inicializacion del cifrado
 cifrador = Fernet(obtenerLlaveFernet())
 
 def encriptarDato(texto: str) -> bytes:
-    """Recibe un texto normal y devuelve los bytes encriptados."""
     return cifrador.encrypt(texto.encode('utf-8'))
 
 def desencriptarDato(textoCifrado: bytes) -> str:
-    """Recibe bytes encriptados y devuelve el texto normal."""
     return cifrador.decrypt(textoCifrado).decode('utf-8')
 
+# ==========================================
+# 2. LÓGICA DE FIRMA POST-CUÁNTICA (DILITHIUM)
+# ==========================================
 
-# Firma digital con RSA
-
-def inicializarLlavesRsa():
-    """Genera y guarda el par de llaves RSA si no existen."""
-    if not os.path.exists("privada.pem") or not os.path.exists("publica.pem"):
-        print("Generando nuevo par de llaves RSA...")
-        llavePrivada = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-        )
-        llavePublica = llavePrivada.public_key()
+def inicializarLlavesPQC():
+    """Genera y guarda el par de llaves Crystals-Dilithium si no existen."""
+    # Guardamos en formato .bin porque Dilithium devuelve arreglos de bytes puros
+    if not os.path.exists("privada_pqc.bin") or not os.path.exists("publica_pqc.bin"):
+        print("Generando nuevo par de llaves Post-Cuánticas (Dilithium2)...")
         
-        # Guardar Llave Privada
-        with open("privada.pem", "wb") as f:
-            f.write(llavePrivada.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()
-            ))
+        # Generación nativa de llaves post-cuánticas
+        llavePublica, llavePrivada = Dilithium2.keygen()
+        
+        with open("privada_pqc.bin", "wb") as f:
+            f.write(llavePrivada)
             
-        # Guardar Llave Pública
-        with open("publica.pem", "wb") as f:
-            f.write(llavePublica.public_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo
-            ))
+        with open("publica_pqc.bin", "wb") as f:
+            f.write(llavePublica)
 
-def cargarLlavePrivada():
-    with open("privada.pem", "rb") as f:
-        return serialization.load_pem_private_key(f.read(), password=None)
+def cargarLlavePrivadaPQC() -> bytes:
+    with open("privada_pqc.bin", "rb") as f:
+        return f.read()
 
-def cargarLlavePublica():
-    with open("publica.pem", "rb") as f:
-        return serialization.load_pem_public_key(f.read())
+def cargarLlavePublicaPQC() -> bytes:
+    with open("publica_pqc.bin", "rb") as f:
+        return f.read()
 
 def firmarDato(datoEncriptado: bytes) -> bytes:
-    """Firma el dato usando la Llave Privada del Tutor/Sistema."""
-    llavePrivada = cargarLlavePrivada()
-    firma = llavePrivada.sign(
-        datoEncriptado,
-        padding.PSS(
-            mgf=padding.MGF1(hashes.SHA256()),
-            salt_length=padding.PSS.MAX_LENGTH
-        ),
-        hashes.SHA256()
-    )
+    """Firma el dato usando la Llave Privada Post-Cuántica."""
+    llavePrivada = cargarLlavePrivadaPQC()
+    firma = Dilithium2.sign(llavePrivada, datoEncriptado)
     return firma
 
 def verificarFirma(datoEncriptado: bytes, firma: bytes) -> bool:
-    """Verifica si la firma coincide con el dato usando la Llave Pública."""
-    llavePublica = cargarLlavePublica()
+    """Verifica si la firma coincide usando la Llave Pública Post-Cuántica."""
+    llavePublica = cargarLlavePublicaPQC()
     try:
-        llavePublica.verify(
-            firma,
-            datoEncriptado,
-            padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
-            ),
-            hashes.SHA256()
-        )
-        return True # La firma es válida
+        # verify() devuelve True si es auténtico, o False si fue alterado
+        esValida = Dilithium2.verify(llavePublica, datoEncriptado, firma)
+        return esValida
     except Exception:
-        return False # La firma no coincide (dato alterado)
+        return False
 
-# Ejecutamos la verificación de llaves RSA al importar el archivo
-inicializarLlavesRsa()
+# Ejecutamos la verificación al arrancar
+inicializarLlavesPQC()
+
+# ==========================================
+# 3. LÓGICA DE CÓDIGOS QR
+# ==========================================
+
+def generarQrCifrado(matricula: str) -> str:
+    # 1. Encriptamos la matrícula
+    matriculaCifradaBytes = encriptarDato(matricula)
+    matriculaCifradaTexto = base64.b64encode(matriculaCifradaBytes).decode('utf-8')
+    
+    # 2. Generamos el QR
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(matriculaCifradaTexto)
+    qr.make(fit=True)
+    
+    imagenQr = qr.make_image(fill_color="black", back_color="white")
+    
+    # 3. Lo empaquetamos en Base64 para la base de datos
+    buffer = BytesIO()
+    imagenQr.save(buffer, format="PNG")
+    imagenBase64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    
+    return f"data:image/png;base64,{imagenBase64}"

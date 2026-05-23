@@ -3,87 +3,93 @@ from pydantic import BaseModel
 from typing import Optional
 import database
 
-app = FastAPI(title="API Proyecto Criptografía Bancaria")
+app = FastAPI(title="API Sistema de Servicio Social")
 
 # --- Modelos de Pydantic ---
-
-class TutorNuevo(BaseModel):
+class AdministradorNuevo(BaseModel):
     usuario: str
     contrasena: str
     nombre: str
-    apellidoPaterno: str
-    apellidoMaterno: Optional[str] = None
-    edad: int
-    foto: Optional[str] = None
     puesto: str
-    area: str
 
-class BecarioNuevo(BaseModel):
+class EmpresaNueva(BaseModel):
+    nombre: str
+    direccion: str
+    telefono: str
+    correo: str
+    folioRegistro: str
+
+class AlumnoNuevo(BaseModel):
+    matricula: str
     usuario: str
     contrasena: str
     nombre: str
     apellidoPaterno: str
     apellidoMaterno: Optional[str] = None
-    edad: int
-    foto: Optional[str] = None
     carrera: str
-    institucion: str
     semestre: int
-    areaAsignada: str
-    tutorId: Optional[int] = None
+    empresaId: Optional[int] = None
 
 class CredencialesLogin(BaseModel):
     usuario: str
     contrasena: str
 
-# --- Endpoint de Autenticación ---
+# --- Evento de Arranque ---
+@app.on_event("startup")
+def arrancarSistema():
+    print("Inicializando base de datos del Servicio Social...")
+    database.startBD()
+
+# --- Endpoints ---
+@app.post("/administradores/")
+def crearAdministrador(admin: AdministradorNuevo):
+    database.insertarAdministrador(admin.usuario, admin.contrasena, admin.nombre, admin.puesto)
+    return {"mensaje": "Administrador registrado exitosamente"}
+
+@app.post("/empresas/")
+def crearEmpresa(empresa: EmpresaNueva):
+    database.insertarEmpresa(empresa.nombre, empresa.direccion, empresa.telefono, empresa.correo, empresa.folioRegistro)
+    return {"mensaje": "Empresa registrada exitosamente en el catálogo"}
+
+@app.post("/alumnos/")
+def crearAlumno(alumno: AlumnoNuevo):
+    database.insertarAlumno(
+        alumno.matricula, alumno.usuario, alumno.contrasena, alumno.nombre, 
+        alumno.apellidoPaterno, alumno.apellidoMaterno, alumno.carrera, 
+        alumno.semestre, alumno.empresaId
+    )
+    return {"mensaje": "Alumno registrado exitosamente para Servicio Social"}
+
 @app.post("/login/")
 def iniciarSesion(credenciales: CredencialesLogin):
     resultado = database.verificarLogin(credenciales.usuario, credenciales.contrasena)
-    
-    # Si la contraseña es incorrecta o el usuario no existe, lanzamos un error 401
     if not resultado["valido"]:
         raise HTTPException(status_code=401, detail=resultado["mensaje"])
-        
-    # Si todo sale bien, devolvemos el rol para que el frontend sepa a qué pantalla redirigir
     return {
         "mensaje": "Inicio de sesión exitoso",
         "rol": resultado["rol"],
         "id": resultado["id"]
     }
 
-# --- Evento de Arranque ---
 
-@app.on_event("startup")
-def arrancarSistema():
-    print("Inicializando base de datos estructurada...")
-    database.startBD()
+# --- Endpoints para Contratos ---
 
-# --- Endpoints para Tutores ---
+@app.post("/contratos/generar/{alumnoId}")
+def generarContrato(alumnoId: int):
+    contrato = database.generarYGuardarContrato(alumnoId)
+    if not contrato:
+        raise HTTPException(
+            status_code=404, 
+            detail="No se encontraron datos del alumno o no tiene una empresa asignada todavía."
+        )
+    return {
+        "mensaje": "Contrato generado y firmado con criptografía post-cuántica exitosamente",
+        "contrato": contrato
+    }
 
-@app.post("/tutores/")
-def crearTutor(tutor: TutorNuevo):
-    database.insertarTutor(
-        tutor.usuario, tutor.contrasena, tutor.nombre, tutor.apellidoPaterno,
-        tutor.apellidoMaterno, tutor.edad, tutor.foto, tutor.puesto, tutor.area
-    )
-    return {"mensaje": "Tutor registrado exitosamente con credenciales protegidas"}
-
-@app.get("/tutores/")
-def listarTutores():
-    return {"tutores": database.getTutoresDescifrados()}
-
-# --- Endpoints para Becarios ---
-
-@app.post("/becarios/")
-def crearBecario(becario: BecarioNuevo):
-    database.insertarBecario(
-        becario.usuario, becario.contrasena, becario.nombre, becario.apellidoPaterno,
-        becario.apellidoMaterno, becario.edad, becario.foto, becario.carrera,
-        becario.institucion, becario.semestre, becario.areaAsignada, becario.tutorId
-    )
-    return {"mensaje": "Becario registrado y asignado exitosamente"}
-
-@app.get("/becarios/")
-def listarBecarios():
-    return {"becarios": database.getBecariosDescifrados()}
+@app.get("/contratos/alumno/{alumnoId}")
+def obtenerContratoAlumno(alumnoId: int):
+    contrato = database.consultarContratoPorAlumno(alumnoId)
+    if not contrato:
+        raise HTTPException(status_code=404, detail="No se encontró ningún contrato para este alumno.")
+    return {"contrato": contrato}
