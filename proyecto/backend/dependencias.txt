@@ -1,7 +1,0 @@
-fastapi
-uvicorn[standard]
-cryptography
-pydantic
-bcrypt
-qrcode[pil]
-dilithium-py

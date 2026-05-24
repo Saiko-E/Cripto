@@ -1,7 +1,0 @@
-python -m venv backend
-cd backend/Scripts
-source backend/Script/activate
-
-npm create vite@latest frontend -- --template react
-cd frontend
-npm install
