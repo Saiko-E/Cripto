@@ -35,9 +35,7 @@ def startBD():
             firmaDigital blob not null
         )
     ''')
-    
-    # 3. Tabla Alumnos (Servicio Social)
-    # 3. Tabla Alumnos (Servicio Social)
+
     # 3. Tabla Alumnos (Servicio Social)
     cursor.execute('''
         create table if not exists alumnos (
@@ -116,8 +114,7 @@ def insertarAlumno(matricula, usuario, contrasenaTextoPlano, nombre, apellidoPat
     nombreCifrado = seguridad.encriptarDato(nombre)
     paternoCifrado = seguridad.encriptarDato(apellidoPaterno)
     maternoCifrado = seguridad.encriptarDato(apellidoMaterno) if apellidoMaterno else b''
-    
-    # ¡Aquí generamos el QR Cifrado!
+
     qrCodeBase64 = seguridad.generarQrCifrado(matricula)
     
     bloqueIdentidad = nombreCifrado + paternoCifrado + maternoCifrado
@@ -126,7 +123,6 @@ def insertarAlumno(matricula, usuario, contrasenaTextoPlano, nombre, apellidoPat
     conexion = getConexion()
     cursor = conexion.cursor()
     
-    # Actualizamos el INSERT para incluir qrCode
     cursor.execute('''
         insert into alumnos (matricula, usuario, contrasenaHash, nombreEncriptado, apellidoPaternoEncriptado, apellidoMaternoEncriptado, carrera, semestre, empresaId, qrCode, firmaDigital)
         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

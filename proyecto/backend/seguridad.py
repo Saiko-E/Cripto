@@ -3,8 +3,6 @@ import base64
 from io import BytesIO
 import qrcode
 from cryptography.fernet import Fernet
-
-# ¡Adiós RSA! Hola Criptografía Post-Cuántica (FIPS 204)
 from dilithium_py.dilithium import Dilithium2
 
 # ==========================================
