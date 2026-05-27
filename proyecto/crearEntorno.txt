@@ -1,0 +1,9 @@
+C:\Users\alexa\AppData\Local\Programs\Python\Python312\python.exe -m venv venv
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+.\venv\Scripts\Activate.ps1
+pip install -r dependencias.txt
+uvicorn main:app --reload
+
+npm create vite@latest frontend -- --template react
+cd frontend
+npm install

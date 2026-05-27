@@ -1,5 +1,5 @@
 import escudoUNAM from '../assets/escudoUNAM.png'
-import escudoFI from '../assets/escudoFI.png'  
+import escudoFI from '../assets/escudoFI.png'
 
 // Encabezado institucional reutilizable (estilo Facultad de Ingeniería)
 export function TopBar() {

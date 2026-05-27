@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { TopBar } from './Header'
-import escudoFI from '../assets/escudo-fi.svg'
+
 
 const API = 'http://localhost:8000'
 
@@ -42,7 +42,6 @@ export default function Login({ onLogin }) {
           <div className="fi-panel-head">Acceso al Sistema</div>
           <div className="fi-panel-body">
             <div className="login-logo">
-              <img src={escudoFI} alt="Escudo FI" />
               <div>
                 <div className="lt">Servicio Social</div>
                 <div className="ls">Facultad de Ingeniería · UNAM</div>
